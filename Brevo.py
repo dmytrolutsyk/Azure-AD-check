@@ -51,7 +51,7 @@ def create_user(api_instance, email, attributes, list_ids):
     except ApiException as e:
         print("Erreur lors de la création du contact: %s\n" % e)
 
-'''if __name__ == "__main__":
-    api_instance = init_brevo()
+#if __name__ == "__main__":
+    #api_instance = init_brevo()
     #get_lists(api_instance)
-    create_user(api_instance)'''
+    #create_user(api_instance)
