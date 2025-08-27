@@ -41,7 +41,7 @@ def getNewUsers():
 
         # Appel Graph API
         # url = f"https://graph.microsoft.com/v1.0/users?$select=id,displayName,mail,userPrincipalName,userType,department,manager,officeLocation,companyName,jobTitle,createdDateTime&$filter=createdDateTime ge {since_iso}"
-        url = f"https://graph.microsoft.com/v1.0/users?$select=id,displayName,givenName,surname,mobilePhone,mail,userPrincipalName,userType,department,manager,officeLocation,companyName,jobTitle,createdDateTime&$filter=createdDateTime ge {since_iso} and userType eq 'Member'"
+        url = f"https://graph.microsoft.com/v1.0/users?$select=id,assignedLicenses, displayName,givenName,surname,mobilePhone,mail,userPrincipalName,userType,department,manager,officeLocation,companyName,jobTitle,createdDateTime&$filter=createdDateTime ge {since_iso} and userType eq 'Member'"
         headers = {"Authorization": f"Bearer {token}"}
         resp = requests.get(url, headers=headers)
 
@@ -71,8 +71,8 @@ def getProcessedUsers():
 
 
 def updateProcessedUsers(old_processed_users):
-    with open(processed_users_file_name, "w") as file:
-        json.dump(old_processed_users, file, indent=4)
+    with open(processed_users_file_name, "w", encoding="utf-8") as file:
+        json.dump(old_processed_users, file, indent=4, ensure_ascii=False)
 
 
 def create_user_in_brevo(api_instance, email, frist_name, last_name, phone):
@@ -92,15 +92,14 @@ if __name__ == "__main__":
     old_processed_users = getProcessedUsers()
     # print(f"Processed users: {old_processed_users}")
 
-    # Itération sur le dictonnaire
-    '''for cle, valeur in old_processed_users.items():
-        print(f"La clé est : {cle} et la valeur est : {valeur}")
-    print("fin de la boucle des users traités")'''
     # print("Data",data)
     api_instance = init_brevo()
 
     # Itération sur les nouveaux utilisateurs
     for user in data.get("value", []):
+        if not user.get('assignedLicenses'):
+            print(f"User {user.get('userPrincipalName')} not processed, because without licences")
+            continue
         print(
             f"User: {user.get('displayName')} - givenName: {user.get('givenName')} - surname: {user.get('surname')} - mobilePhone: {user.get('mobilePhone')} - userPrincipalName: {user.get('userPrincipalName')} - createdDateTime: {user.get('createdDateTime')} - jobTitle: {user.get('jobTitle')}- officeLocation:{user.get('officeLocation')}- companyName:{user.get('companyName')} - userType:{user.get('userType')} - manager:{user.get('manager')}")
         processed_user = user.copy()
@@ -108,8 +107,7 @@ if __name__ == "__main__":
         if user.get('id') not in old_processed_users:  # Vérification si l'utilisateur n'est pas déjà traité
             old_processed_users[processed_user['id']] = processed_user
             create_user_in_brevo(api_instance,user.get('mail'),user.get('givenName'), user.get('surname'), user.get('mobilePhone'))
-            updateProcessedUsers(old_processed_users)  # Mise à jour du fichier des users traités
-            exit(0)
         else:
             print(f"L'utilisateur {user.get('displayName')} existe déjà.")
+    updateProcessedUsers(old_processed_users)  # Mise à jour du fichier des users traités
 
